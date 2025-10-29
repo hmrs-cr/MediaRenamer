@@ -1,0 +1,15 @@
+[Unit]
+Description=Peliculas Renamer/Organizer Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/home/pelis/bin/media_renamer_service/start_env
+WorkingDirectory=/home/pelis/bin/media_renamer_service
+Restart=always
+User=pelis
+Group=pelis
+Environment=PYTHONUNBUFFERED=1 # Optional: For unbuffered output to systemd journal
+
+[Install]
+WantedBy=multi-user.target
