@@ -1,0 +1,8 @@
+[Unit]
+Description=Run rename_media.service every 5 minutes
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=5min
+Unit=rename_media.service
+[Install]
+WantedBy=timers.target

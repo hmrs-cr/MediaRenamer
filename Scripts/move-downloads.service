@@ -1,0 +1,9 @@
+[Unit]
+Description=Move Peli Downloads Service
+
+[Service]
+Type=oneshot
+ExecStart=/home/pelis/bin/media_renamer_service/move-downloads
+WorkingDirectory=/home/pelis/bin/media_renamer_service
+User=root
+Group=root

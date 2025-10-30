@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# --- Configuration ---
+PELICULAS_MOUNT_POINT="/mnt/Peliculas"
+DESCARGAS_MOUNT_POINT="/mnt/Descargas"
+
+SOURCE_DIR="$DESCARGAS_MOUNT_POINT/Peliculas"
+DEST_DIR="$PELICULAS_MOUNT_POINT/Peliculas"
+
+LOG_FILE="$DESCARGAS_MOUNT_POINT/move-downloads-service.log"
+
+if [ -f "$PELICULAS_MOUNT_POINT/.pelis" ]; then
+    if [ -f "$DESCARGAS_MOUNT_POINT/.pelis" ]; then
+        if [ -n "$(find "$SOURCE_DIR/Animadas" -maxdepth 0 -empty)" ] && [ -n "$(find "$SOURCE_DIR/Dobladas" -maxdepth 0 -empty)" ]; then
+            echo "$SOURCE_DIR is empty, nothing to move."
+        else
+            rsync -av --chown=pelis:pelis --chmod=g+w --remove-source-files "$SOURCE_DIR/" "$DEST_DIR/" >> "$LOG_FILE" 2>&1
+            sleep 61
+        fi
+    else
+        echo 'Descargas drive not mounted'
+    fi
+
+    if [ -n "$(find "$DEST_DIR/Animadas" -maxdepth 1 -name "*.nfo")" ]; then
+        ./rename_media.py $DEST_DIR/Animadas/*.nfo >> "$LOG_FILE" 2>&1
+        chown -R pelis:pelis "$DEST_DIR/Animadas"
+    else
+        echo 'No .nfo files found in Animadas'
+    fi
+
+    if [ -n "$(find "$DEST_DIR/Dobladas" -maxdepth 1 -name "*.nfo")" ]; then
+        ./rename_media.py $DEST_DIR/Dobladas/*.nfo >> "$LOG_FILE" 2>&1
+        chown -R pelis:pelis "$DEST_DIR/Dobladas"
+    else
+        echo 'No .nfo files found in Dobladas'
+    fi
+else
+	echo 'Pelis drive not mounted'
+fi
