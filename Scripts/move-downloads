@@ -27,7 +27,6 @@ if [ -f "$PELICULAS_MOUNT_POINT/.pelis" ]; then
     rm "$DEST_DIR/Dobladas/"._*.nfo 2>/dev/null
     rm "$DEST_DIR/Animadas/"._*.nfo 2>/dev/null
 
-    # TODO : Only if some files were moved
     if [ "$MOVED" = true ]; then
         echo "$(date +"%Y-%m-%dT%H:%M:%S"): Files moved, waiting for .nfo files..." >> "$LOG_FILE"
         inotifywait -q -t 300 -e create --format '%w%f' "$DEST_DIR/Animadas" "$DEST_DIR/Dobladas" | while read -r file; do
