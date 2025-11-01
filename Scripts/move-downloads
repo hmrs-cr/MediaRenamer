@@ -9,31 +9,58 @@ DEST_DIR="$PELICULAS_MOUNT_POINT/Peliculas"
 
 LOG_FILE="$DESCARGAS_MOUNT_POINT/move-downloads-service.log"
 
+MOVED=false
 if [ -f "$PELICULAS_MOUNT_POINT/.pelis" ]; then
     if [ -f "$DESCARGAS_MOUNT_POINT/.pelis" ]; then
         if [ -n "$(find "$SOURCE_DIR/Animadas" -maxdepth 0 -empty)" ] && [ -n "$(find "$SOURCE_DIR/Dobladas" -maxdepth 0 -empty)" ]; then
             echo "$SOURCE_DIR is empty, nothing to move."
         else
+            echo "$(date +"%Y-%m-%dT%H:%M:%S"): Moving files from $SOURCE_DIR to $DEST_DIR :" >> "$LOG_FILE"
             rsync -av --chown=pelis:pelis --chmod=g+w --remove-source-files "$SOURCE_DIR/" "$DEST_DIR/" >> "$LOG_FILE" 2>&1
-            sleep 61
+            MOVED=true
+            sleep 30
         fi
     else
         echo 'Descargas drive not mounted'
     fi
 
-    if [ -n "$(find "$DEST_DIR/Animadas" -maxdepth 1 -name "*.nfo")" ]; then
-        ./rename_media.py $DEST_DIR/Animadas/*.nfo >> "$LOG_FILE" 2>&1
-        chown -R pelis:pelis "$DEST_DIR/Animadas"
-    else
-        echo 'No .nfo files found in Animadas'
-    fi
+    rm "$DEST_DIR/Dobladas/"._*.nfo 2>/dev/null
+    rm "$DEST_DIR/Animadas/"._*.nfo 2>/dev/null
 
-    if [ -n "$(find "$DEST_DIR/Dobladas" -maxdepth 1 -name "*.nfo")" ]; then
-        ./rename_media.py $DEST_DIR/Dobladas/*.nfo >> "$LOG_FILE" 2>&1
-        chown -R pelis:pelis "$DEST_DIR/Dobladas"
-    else
-        echo 'No .nfo files found in Dobladas'
-    fi
+    # TODO : Only if some files were moved
+    if [ "$MOVED" = true ]; then
+        echo "$(date +"%Y-%m-%dT%H:%M:%S"): Files moved, waiting for .nfo files..." >> "$LOG_FILE"
+        inotifywait -q -t 300 -e create --format '%w%f' "$DEST_DIR/Animadas" "$DEST_DIR/Dobladas" | while read -r file; do
+            if [[ "$file" == *.nfo ]]; then
+                sleep 30
+                break
+            fi
+        done
+     fi
+
+    while true; do
+        if [ -n "$(find "$DEST_DIR/Animadas" -maxdepth 1 -name "*.nfo")" ]; then
+            echo "$(date +"%Y-%m-%dT%H:%M:%S"): Re-organizing files in $DEST_DIR/Animadas:" >> "$LOG_FILE"
+            ./rename_media.py $DEST_DIR/Animadas/*.nfo >> "$LOG_FILE" 2>&1
+            chown -R pelis:pelis "$DEST_DIR/Animadas"
+            chmod -R g+w "$DEST_DIR/Animadas"
+        else
+            echo 'No .nfo files found in Animadas'
+            break
+        fi
+    done
+
+    while true; do
+        if [ -n "$(find "$DEST_DIR/Dobladas" -maxdepth 1 -name "*.nfo")" ]; then
+            echo "$(date +"%Y-%m-%dT%H:%M:%S"): Re-organizing files in $DEST_DIR/Dobladas:" >> "$LOG_FILE"
+            ./rename_media.py $DEST_DIR/Dobladas/*.nfo >> "$LOG_FILE" 2>&1
+            chown -R pelis:pelis "$DEST_DIR/Dobladas"
+            chmod -R g+w "$DEST_DIR/Dobladas"
+        else
+            echo 'No .nfo files found in Dobladas'
+            break
+        fi
+    done
 else
 	echo 'Pelis drive not mounted'
 fi
